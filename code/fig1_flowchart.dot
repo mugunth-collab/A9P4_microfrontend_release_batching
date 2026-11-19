@@ -1,0 +1,41 @@
+digraph G {
+  graph [rankdir=TB, fontname="Helvetica", fontsize=12, nodesep=0.12, ranksep=0.16, margin=0.02, newrank=true];
+  node  [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12, fillcolor="#eeeeee", color="#777777", margin="0.05,0.02", height=0.28];
+  edge  [color="#555555", arrowsize=0.55, fontname="Helvetica", fontsize=11];
+
+  subgraph cluster_data { label="1  Data layer"; style="rounded,filled"; fillcolor="#f4f4f4"; color="#bbbbbb";
+    log  [label="8,000 changes\n12 modules"];
+    win  [label="5 rolling folds\n8-wk opt / 4-wk test"];
+    {rank=same; log; win}
+  }
+  subgraph cluster_prep { label="2  Pre-processing"; style="rounded,filled"; fillcolor="#f4f4f4"; color="#bbbbbb";
+    imp  [label="Impute, clip\nx_i, eta_i"];
+    risk [label="Logistic risk\np_i, Eq. (5)"];
+    {rank=same; imp; risk}
+  }
+  subgraph cluster_sca { label="3  Proposed SCA"; style="rounded,filled"; fillcolor="#fdeeee"; color="#d08080";
+    node [fillcolor="#f6c9c9", color="#b04040"];
+    init [label="Init 30 agents\nx in [0,1]^24"];
+    dec  [label="Decode a_m, tau_k\nEq. (8)"];
+    fit  [label="Replay: cost J\nEqs. (1)-(7)"];
+    conv [shape=diamond, label="t = 200?", height=0.45, width=1.0];
+    upd  [label="Sine/cosine move\nEqs. (9)-(10)"];
+    ref  [label="Elite refine\nevery 10 it."];
+    {rank=same; init; dec}
+    {rank=same; conv; fit}
+    {rank=same; upd; ref}
+  }
+  subgraph cluster_eval { label="4  Evaluation"; style="rounded,filled"; fillcolor="#f4f4f4"; color="#bbbbbb";
+    base [label="4 baselines\n+ random search"];
+    plan [label="Plan P*\ntrains, cadences"];
+    test [label="Test replay\n5 folds x 5 seeds"];
+    {rank=same; base; plan}
+  }
+  log -> win; log -> imp; win -> risk; imp -> risk;
+  risk -> init; imp -> dec;
+  init -> dec; dec -> fit; fit -> conv;
+  conv -> upd [label="no"]; upd -> ref; ref -> dec [constraint=false, label="new P"];
+  conv -> plan [label="yes", constraint=false];
+  upd -> base [style=invis]; ref -> plan [style=invis];
+  plan -> test; base -> test;
+}
